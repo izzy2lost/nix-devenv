@@ -43,11 +43,12 @@ jobs:
             adb shell input keyevent 66  # Press Enter
             sleep 10  # Extra wait to ensure storage is ready
 
-            # Try granting storage permission (may fail on Android 10+)
-            adb shell pm grant com.termux android.permission.WRITE_EXTERNAL_STORAGE
+            # Push files to a writable Android directory
+            adb push baserom.us.z64 /data/local/tmp/
+            adb push myscript.sh /data/local/tmp/
 
-            # Push to /sdcard/ instead of /
-            adb push baserom.us.z64 /sdcard/
-            adb push myscript.sh /sdcard/            
-          
-            chmod +x /sdcard/myscript.sh && /sdcard/myscript.sh'
+            # Execute via ADB shell (limited to Android's tools)
+            adb shell "sh /data/local/tmp/myscript.sh"
+
+            # Pull results
+            adb pull /data/local/tmp/output.txt .
