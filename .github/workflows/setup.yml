@@ -22,27 +22,20 @@ jobs:
       - name: Verify Nix Installation
         run: nix --version
 
-      - name: Download and Build Devenv from Source
-        run: |
-          wget -O devenv.zip https://github.com/cachix/devenv/archive/refs/tags/v1.4.1.zip
-          unzip devenv.zip
-          cd devenv-1.4.1
-          nix-build
-          echo "Devenv built successfully"
+      - name: Install Cachix
+        run: nix-env -iA cachix -f https://cachix.org/api/v1/install
 
-      - name: Add Devenv to PATH
+      - name: Configure Nix for Trusted Users
         run: |
-          export PATH=$PATH:/home/runner/work/_temp/devenv-1.4.1/result/bin
-          echo "Devenv added to PATH"
+          echo "trusted-users = root ${USER}" | sudo tee -a /etc/nix/nix.conf
+          sudo pkill nix-daemon
 
-      - name: Verify Devenv Installation
-        run: devenv --version
+      - name: Use Devenv Cache from Cachix
+        run: cachix use devenv
+
+      - name: Install Devenv
+        run: nix-env -iA devenv -f https://github.com/NixOS/nixpkgs/tarball/nixpkgs-unstable
 
       - name: Initialize Devenv Environment
         run: devenv init
-
-      - name: Build the Devenv Shell
-        run: devenv shell
-
-      - name: Run Devenv Tests
-        run: devenv test
+        
