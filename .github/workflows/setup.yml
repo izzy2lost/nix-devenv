@@ -47,8 +47,5 @@ jobs:
             adb push baserom.us.z64 /storage/emulated/0/
             adb push myscript.sh /storage/emulated/0/
 
-            # Move files inside Termux and execute script
-            adb shell "mv /storage/emulated/0/baserom.us.z64 /data/data/com.termux/files/home/"
-            adb shell "mv /storage/emulated/0/myscript.sh /data/data/com.termux/files/home/"
-            adb shell "chmod +x /data/data/com.termux/files/home/myscript.sh"
-            adb shell "sh /data/data/com.termux/files/home/myscript.sh"
+            # execute script
+            adb shell "bash /storage/emulated/0/myscript.sh"
