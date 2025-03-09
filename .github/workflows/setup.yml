@@ -11,19 +11,19 @@ jobs:
         abi: ["armeabi-v7a", "arm64-v8a"] # The matrix for two ABI versions
 
     steps:
-       - name: Free up disk space
-  uses: jlumbroso/free-disk-space@main
-  with:
-    android: false  # Keep Android SDK/NDK/emulator
-    dotnet: true  # Remove .NET (huge space saver)
-    haskell: true  # Remove Haskell (GHC)
-    large-packages: true  # Remove large, non-essential packages
-    swap: true  # Remove swap file for extra space
-    docker-images: true  # Remove preinstalled Docker images (saves a lot of space)
-    
+      - name: Free up disk space
+        uses: jlumbroso/free-disk-space@main
+        with:
+          android: false  # Keep Android SDK/NDK/emulator
+          dotnet: true  # Remove .NET (huge space saver)
+          haskell: true  # Remove Haskell (GHC)
+          large-packages: true  # Remove large, non-essential packages
+          swap: true  # Remove swap file for extra space
+          docker-images: true  # Remove preinstalled Docker images (saves a lot of space)
+
       - name: Checkout Repository
         uses: actions/checkout@v4
-      
+
       - name: Install Nix
         uses: cachix/install-nix-action@v30
         with:
@@ -39,7 +39,7 @@ jobs:
         run: |
           echo "trusted-users = root ${USER}" | sudo tee -a /etc/nix/nix.conf
           sudo pkill nix-daemon
-          
+
       - name: Use Devenv Cache from Cachix
         run: cachix use devenv
 
@@ -51,7 +51,7 @@ jobs:
 
       - name: Download Termux APK
         run: wget https://f-droid.org/repo/com.termux_1020.apk -O termux.apk
-     
+
       - name: Set Up Android Emulator with Nix
         run: |
           echo 'with import <nixpkgs> {
@@ -60,7 +60,7 @@ jobs:
               allowUnfree = true;
             };
           };
-          
+
           let
             androidComposition = androidenv.composeAndroidPackages {
               cmdLineToolsVersion = "8.0";
@@ -86,8 +86,6 @@ jobs:
           in
           androidComposition.androidsdk' > android-emulator.nix
 
-          nix-build android-emulator.nix
-          
       - name: Enable KVM
         run: |
           echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
@@ -96,7 +94,7 @@ jobs:
 
       - name: Gradle cache
         uses: gradle/actions/setup-gradle@v3
-        
+
       - name: AVD cache
         uses: actions/cache@v4
         id: avd-cache
@@ -106,7 +104,7 @@ jobs:
             ~/.android/adb*
           key: avd-${{ matrix.api-level }}
 
-      - name: create AVD and generate snapshot for caching
+      - name: Create AVD and Generate Snapshot for Caching
         if: steps.avd-cache.outputs.cache-hit != 'true'
         uses: reactivecircus/android-emulator-runner@v2
         with:
@@ -116,7 +114,7 @@ jobs:
           disable-animations: false
           script: echo "Generated AVD snapshot for caching."
 
-      - name: run tests for armeabi-v7a
+      - name: Run Tests for armeabi-v7a
         if: matrix.abi == 'armeabi-v7a'
         uses: reactivecircus/android-emulator-runner@v2
         with:
@@ -133,7 +131,6 @@ jobs:
             adb push baserom.us.z64 /data/data/com.termux/files/home/
             adb push myscript.sh /data/data/com.termux/files/home/
             adb shell "su -c 'bash /data/data/com.termux/files/home/myscript.sh'"
-            # Wait for APK build
             echo "Waiting for APK build to complete..."
             timeout=1800
             elapsed=0
@@ -147,7 +144,7 @@ jobs:
             done
             adb pull /data/data/com.termux/files/home/build/us_pc/sm64coopdx.apk sm64coopdx-${{ matrix.abi }}.apk
 
-      - name: run tests for arm64-v8a
+      - name: Run Tests for arm64-v8a
         if: matrix.abi == 'arm64-v8a'
         uses: reactivecircus/android-emulator-runner@v2
         with:
@@ -164,7 +161,6 @@ jobs:
             adb push baserom.us.z64 /data/data/com.termux/files/home/
             adb push myscript.sh /data/data/com.termux/files/home/
             adb shell "su -c 'bash /data/data/com.termux/files/home/myscript.sh'"
-            # Wait for APK build
             echo "Waiting for APK build to complete..."
             timeout=1800
             elapsed=0
