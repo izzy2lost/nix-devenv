@@ -44,7 +44,6 @@ jobs:
             sleep 10  # Extra wait to ensure storage is ready
 
             # Push files to shared storage
-            adb push baserom.us.z64 /
             adb push myscript.sh /
 
             # Push files to Termux's home directory
