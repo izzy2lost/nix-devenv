@@ -44,7 +44,11 @@ jobs:
       
       - name: Set Up Android Emulator with Nix
         run: |
-          echo 'with import <nixpkgs> {};
+          echo 'with import <nixpkgs> {
+            config = {
+              android_sdk.accept_license = true;
+            };
+          };
           
           let
             androidComposition = androidenv.composeAndroidPackages {
@@ -72,7 +76,7 @@ jobs:
           androidComposition.androidsdk' > android-emulator.nix
 
           nix-build android-emulator.nix
-
+          
       - name: Start Android Emulator
         run: |
           nohup emulator -avd test_emulator -no-audio -no-window -gpu off &
