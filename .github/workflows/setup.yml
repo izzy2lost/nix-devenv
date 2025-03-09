@@ -16,25 +16,26 @@ jobs:
         
       - name: Install Nix
         run: |
-          # Installing Nix from the official GitHub releases
           curl -L https://nixos.org/nix/install | sh
           source /home/runner/.nix-profile/etc/profile.d/nix.sh
           echo "Nix installed successfully"
 
-      - name: Install Devenv (from script or Nix)
+      - name: Download and Build Devenv from Source
         run: |
-          # Attempting to use a shell script or Nix to install Devenv
-          if ! command -v devenv &> /dev/null; then
-            echo "Devenv not found, installing..."
-            # Try using Nix if devenv is not found
-            nix-env -iA nixpkgs.devenv
-          else
-            echo "Devenv is already installed"
-          fi
+          wget -O devenv.zip https://github.com/cachix/devenv/archive/refs/tags/v1.4.1.zip
+          unzip devenv.zip
+          cd devenv-1.4.1
+          nix-build
+          echo "Devenv built successfully"
+
+      - name: Install Devenv
+        run: |
+          cd devenv-1.4.1
+          nix-env -i ./result
+          echo "Devenv installed successfully"
 
       - name: Initialize Devenv
         run: |
-          # Initialize Devenv environment
           devenv init
        
       - uses: cachix/cachix-action@v15
