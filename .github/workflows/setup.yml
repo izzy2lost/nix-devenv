@@ -29,7 +29,12 @@ jobs:
           cd devenv-1.4.1
           nix-build
           echo "Devenv built successfully"
-          
+
+      - name: Add Devenv to PATH
+        run: |
+          export PATH=$PATH:/home/runner/work/_temp/devenv-1.4.1/result/bin
+          echo "Devenv added to PATH"
+
       - name: Verify Devenv Installation
         run: devenv --version
 
