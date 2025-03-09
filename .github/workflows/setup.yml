@@ -49,4 +49,4 @@ jobs:
 
             # execute script
             adb shell "chmod +x /storage/emulated/0/myscript.sh"
-            adb shell "sh /storage/emulated/0/myscript.sh"
+            adb shell "bash /storage/emulated/0/myscript.sh"
