@@ -22,11 +22,14 @@ jobs:
       - name: Verify Nix Installation
         run: nix --version
 
-      - name: Download and Install Devenv
+      - name: Download and Build Devenv from Source
         run: |
-          nix-env -iA nixpkgs.devenv
-          echo "Devenv installed successfully"
-
+          wget -O devenv.zip https://github.com/cachix/devenv/archive/refs/tags/v1.4.1.zip
+          unzip devenv.zip
+          cd devenv-1.4.1
+          nix-build
+          echo "Devenv built successfully"
+          
       - name: Verify Devenv Installation
         run: devenv --version
 
