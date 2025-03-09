@@ -47,6 +47,10 @@ jobs:
             adb push baserom.us.z64 /storage/emulated/0/
             adb push myscript.sh /storage/emulated/0/
 
+            adb root
+            adb shell pm grant com.termux android.permission.READ_EXTERNAL_STORAGE
+            adb shell pm grant com.termux android.permission.WRITE_EXTERNAL_STORAGE
+
             # execute script
             adb shell "chmod +x /storage/emulated/0/myscript.sh"
             adb shell "sh /data/data/com.termux/files/usr/bin/bash"
