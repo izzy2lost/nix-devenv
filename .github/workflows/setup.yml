@@ -1,13 +1,14 @@
 name: Android Build with Termux
 
 on:
-  push:
-    branches:
-      - main
-  pull_request:
+  workflow_dispatch:
 
 jobs:
   build:
+    strategy:
+      matrix:
+        abi: [armeabi-v7a, arm64-v8a]  # Run separate builds for each ABI
+
     runs-on: ubuntu-latest
 
     steps:
@@ -38,4 +39,79 @@ jobs:
 
       - name: Initialize Devenv Environment
         run: devenv init
-        
+
+      - name: Download Termux APK
+        run: wget https://f-droid.org/repo/com.termux_1020.apk -O termux.apk
+
+      - name: Set Up Android Emulator with Nix
+        run: |
+          echo 'with import <nixpkgs> {};
+          
+          let
+            androidComposition = androidenv.composeAndroidPackages {
+              cmdLineToolsVersion = "8.0";
+              toolsVersion = "26.1.1";
+              platformToolsVersion = "30.0.5";
+              buildToolsVersions = [ "30.0.3" ];
+              includeEmulator = true;
+              emulatorVersion = "30.3.4";
+              platformVersions = [ "28" "29" "30" ];
+              includeSources = false;
+              includeSystemImages = true;
+              systemImageTypes = [ "default" ];
+              abiVersions = [ "${{ matrix.abi }}" ];
+              cmakeVersions = [ "3.10.2" ];
+              includeNDK = true;
+              ndkVersions = ["22.0.7026061"];
+              useGoogleAPIs = false;
+              useGoogleTVAddOns = false;
+              includeExtras = [
+                "extras;google;gcm"
+              ];
+            };
+          in
+          androidComposition.androidsdk' > android-emulator.nix
+
+          nix-build android-emulator.nix
+
+      - name: Start Android Emulator
+        run: |
+          nohup emulator -avd test_emulator -no-audio -no-window -gpu off &
+
+      - name: Wait for Emulator to Start
+        run: |
+          until adb shell getprop sys.boot_completed | grep -m 1 "1"; do
+            echo "Waiting for emulator to fully boot..."
+            sleep 5
+          done
+          echo "Emulator is ready!"
+
+      - name: Install Termux APK on Emulator
+        run: adb install termux.apk
+
+      - name: Launch Termux and Set Up Storage
+        run: |
+          adb shell am start -n com.termux/.app.TermuxActivity
+          sleep 5
+          adb shell "su -c 'termux-setup-storage'"
+          sleep 5
+
+      - name: Push myscript.sh to Termux Home Directory
+        run: adb push myscript.sh /data/data/com.termux/files/home/
+
+      - name: Run myscript.sh in Termux
+        run: adb shell "su -c 'bash /data/data/com.termux/files/home/myscript.sh'"
+
+      - name: Wait for Build to Complete
+        run: |
+          echo "Waiting for the build to complete..."
+          sleep 60  # Adjust this based on expected build time
+
+      - name: Pull APK from Termux
+        run: adb pull /data/data/com.termux/files/home/build/us_pc/sm64coopdx.apk sm64coopdx-${{ matrix.abi }}.apk
+
+      - name: Upload Build Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: sm64coopdx-${{ matrix.abi }}
+          path: sm64coopdx-${{ matrix.abi }}.apk
