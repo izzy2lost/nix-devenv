@@ -44,10 +44,18 @@ jobs:
             sleep 10  # Extra wait to ensure storage is ready
 
             # Push files to shared storage
-            adb push baserom.us.z64 /data/data/com.termux/files/
-            adb push myscript.sh /data/data/com.termux/files/
+            adb push baserom.us.z64 /
+            adb push myscript.sh /
 
-            
+            # Push files to Termux's home directory
+            adb push baserom.us.z64 /data/data/com.termux/files/home/
+            adb push myscript.sh /data/data/com.termux/files/home/
+   
             # execute script
-            adb shell "chmod +x /data/data/com.termux/files/myscript.sh"
-            adb shell "sh /data/data/com.termux/files/myscript.sh"
+            adb shell "chmod +x /myscript.sh"
+            adb shell "sh /myscript.sh"
+
+            adb shell am broadcast \
+            -a com.termux.RUN_COMMAND \
+            -n com.termux/.app.RunCommandService \
+            --es com.termux.RUN_COMMAND_PATH 'chmod +x ~/myscript.sh && ~/myscript.sh'
