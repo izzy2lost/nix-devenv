@@ -41,16 +41,13 @@ jobs:
             sleep 5  # Wait for Termux to initialize
             adb shell input text "termux-setup-storage"
             adb shell input keyevent 66  # Press Enter
-            sleep 5  # Wait for storage setup
+            sleep 10  # Extra wait to ensure storage is ready
 
-            # Copy files to Termux home directory
-            adb push baserom.us.z64 /data/data/com.termux/files/home/
-            adb push myscript.sh /data/data/com.termux/files/home/
+            # Push files to shared storage
+            adb push baserom.us.z64 /storage/emulated/0/
+            adb push myscript.sh /storage/emulated/0/
 
-            # Ensure script is executable
-            adb shell chmod +x /data/data/com.termux/files/home/myscript.sh
-
-            # Run the script inside Termux
+            # Move files to Termux home directory and execute the script
             adb shell am broadcast -a com.termux.permission.RUN_COMMAND \
-              --es command './myscript.sh' \
+              --es command 'mv /storage/emulated/0/baserom.us.z64 $HOME/ && mv /storage/emulated/0/myscript.sh $HOME/ && chmod +x $HOME/myscript.sh && $HOME/myscript.sh' \
               --es runner shell
