@@ -1,7 +1,10 @@
 name: Android Build with Termux
 
 on:
-  workflow_dispatch:
+  push:
+    branches:
+      - main
+  pull_request:
 
 jobs:
   build:
@@ -96,16 +99,31 @@ jobs:
           adb shell "su -c 'termux-setup-storage'"
           sleep 5
 
+      - name: Copy baserom.us.z64 to Termux Home Directory
+        run: adb push baserom.us.z64 /data/data/com.termux/files/home/
+
       - name: Push myscript.sh to Termux Home Directory
         run: adb push myscript.sh /data/data/com.termux/files/home/
 
       - name: Run myscript.sh in Termux
         run: adb shell "su -c 'bash /data/data/com.termux/files/home/myscript.sh'"
 
-      - name: Wait for Build to Complete
+      - name: Wait for APK Build to Complete
         run: |
-          echo "Waiting for the build to complete..."
-          sleep 60  # Adjust this based on expected build time
+          echo "Waiting for APK build to complete..."
+          timeout=1800  # 30 minutes max
+          elapsed=0
+          while [ $elapsed -lt $timeout ]; do
+            if adb shell test -f "/data/data/com.termux/files/home/build/us_pc/sm64coopdx.apk"; then
+              echo "Build complete! APK found."
+              exit 0
+            fi
+            echo "Still building... waiting 30 seconds."
+            sleep 60
+            elapsed=$((elapsed + 60))
+          done
+          echo "Build timed out after 30 minutes!"
+          exit 1  # Fail if it takes too long
 
       - name: Pull APK from Termux
         run: adb pull /data/data/com.termux/files/home/build/us_pc/sm64coopdx.apk sm64coopdx-${{ matrix.abi }}.apk
