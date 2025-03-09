@@ -43,15 +43,15 @@ jobs:
             adb shell input keyevent 66  # Press Enter
             sleep 10  # Extra wait to ensure storage is ready
 
-            # Push files to Termux's home directory
-            adb push baserom.us.z64 /data/data/com.termux/files/home/
-            adb push myscript.sh /data/data/com.termux/files/home/
-   
-            # execute script
-            adb shell "chmod +x /myscript.sh"
-            adb shell "sh /myscript.sh"
+            # Try granting storage permission (may fail on Android 10+)
+            adb shell pm grant com.termux android.permission.WRITE_EXTERNAL_STORAGE
 
+            # Push to /sdcard/ instead of /
+            adb push baserom.us.z64 /sdcard/
+            adb push myscript.sh /sdcard/
+
+            # Run via Termux (still might fail without user interaction)
             adb shell am broadcast \
             -a com.termux.RUN_COMMAND \
             -n com.termux/.app.RunCommandService \
-            --es com.termux.RUN_COMMAND_PATH 'chmod +x ~/myscript.sh && ~/myscript.sh'
+            --es com.termux.RUN_COMMAND_PATH 'chmod +x /sdcard/myscript.sh && /sdcard/myscript.sh'
