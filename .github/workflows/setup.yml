@@ -55,7 +55,7 @@ jobs:
             androidComposition = androidenv.composeAndroidPackages {
               cmdLineToolsVersion = "8.0";
               toolsVersion = "26.1.1";
-              platformToolsVersion = "30.0.5";
+              platformToolsVersion = "33.0.3";
               buildToolsVersions = [ "30.0.3" ];
               includeEmulator = true;
               emulatorVersion = "30.3.4";
