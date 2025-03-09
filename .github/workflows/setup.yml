@@ -36,4 +36,4 @@ jobs:
           git commit -m "Automated changes from GitHub Actions"
           git push origin main
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # This token allows GitHub Actions to push changes
+          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}  # This token allows GitHub Actions to push changes
