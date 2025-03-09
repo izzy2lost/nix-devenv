@@ -43,9 +43,6 @@ jobs:
             adb shell input keyevent 66  # Press Enter
             sleep 10  # Extra wait to ensure storage is ready
 
-            # Push files to shared storage
-            adb push myscript.sh /
-
             # Push files to Termux's home directory
             adb push baserom.us.z64 /data/data/com.termux/files/home/
             adb push myscript.sh /data/data/com.termux/files/home/
