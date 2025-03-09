@@ -1,54 +1,12 @@
-name: Run Termux in Android Emulator
+name: ci
 
-on: [push, pull_request]
+on:
+  workflow_dispatch:
 
 jobs:
-  test:
+  qemu:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Install ADB
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y adb
-
-      - name: Enable KVM
-        run: |
-          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
-          sudo udevadm control --reload-rules
-          sudo udevadm trigger --name-match=kvm
-
-      - name: Download Termux APK
-        run: |
-          wget https://f-droid.org/repo/com.termux_1020.apk -O termux.apk
-
-      - name: Start Android Emulator, Install Termux, and Run Script
-        uses: reactivecircus/android-emulator-runner@v2
-        with:
-          api-level: 29
-          script: |
-            adb start-server
-            adb devices  # Ensure the emulator is detected
-
-            adb shell input keyevent 82  # Unlock screen
-            adb install termux.apk       # Install Termux APK
-            adb shell monkey -p com.termux -c android.intent.category.LAUNCHER 1  # Launch Termux
-
-            # Grant Termux storage access
-            adb shell am start -n com.termux/.TermuxActivity
-            sleep 5  # Wait for Termux to initialize
-            adb shell input text "termux-setup-storage"
-            adb shell input keyevent 66  # Press Enter
-            sleep 10  # Extra wait to ensure storage is ready
-
-            # Push files to a writable Android directory
-            adb push baserom.us.z64 /data/local/tmp/
-            adb push myscript.sh /data/local/tmp/
-
-            # Execute via ADB shell (limited to Android's tools)
-            adb shell "sh /data/local/tmp/myscript.sh"
-
-            # Pull results
-            adb pull /data/local/tmp/output.txt .
+      -
+        name: Set up QEMU
+        uses: docker/setup-qemu-action@v3.6.0
