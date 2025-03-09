@@ -48,4 +48,4 @@ jobs:
             adb push myscript.sh /storage/emulated/0/
 
             # execute script
-            adb shell "bash /storage/emulated/0/myscript.sh"
+            adb shell "sh /storage/emulated/0/myscript.sh"
