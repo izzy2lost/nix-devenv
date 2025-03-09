@@ -1,60 +1,18 @@
-name: Android Build with Termux
+name: Run Termux in Android Emulator
 
-on:
-  workflow_dispatch:
+on: [push, pull_request]
 
 jobs:
-  build:
+  test:
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        include:
-          - abi: armeabi-v7a
-            api-level: 24
-          - abi: arm64-v8a
-            api-level: 28
-
     steps:
-      - name: Free up disk space
-        uses: jlumbroso/free-disk-space@main
-
-      - name: Checkout Repository
+      - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Install Nix
-        uses: cachix/install-nix-action@v30
-        with:
-          nix_path: nixpkgs=channel:nixos-unstable
-
-      - name: Verify Nix Installation
-        run: nix --version
-
-      - name: Install Cachix
-        run: nix-env -iA cachix -f https://cachix.org/api/v1/install
-
-      - name: Configure Nix for Trusted Users
+      - name: Install ADB
         run: |
-          echo "trusted-users = root ${USER}" | sudo tee -a /etc/nix/nix.conf
-          sudo pkill nix-daemon
-
-      - name: Use Devenv Cache from Cachix
-        run: cachix use devenv
-
-      - name: Install Devenv
-        run: nix-env -iA devenv -f https://github.com/NixOS/nixpkgs/tarball/nixpkgs-unstable
-
-      - name: Set Up Android Emulator with Termux
-        run: |
-          echo 'with import <nixpkgs> {};
-          
-          androidenv.emulateApp {
-            name = "emulate-Termux";
-            platformVersion = "${{ matrix.api-level }}";
-            abiVersion = "${{ matrix.abi }}";
-            systemImageType = "default";
-            package = "com.termux";
-            activity = ".app.TermuxActivity";
-          }' > android-emulator.nix
+          sudo apt-get update
+          sudo apt-get install -y adb
 
       - name: Enable KVM
         run: |
@@ -62,22 +20,37 @@ jobs:
           sudo udevadm control --reload-rules
           sudo udevadm trigger --name-match=kvm
 
-      - name: Start Android Emulator with Termux
-        uses: cachix/nix-action@v4
-        with:
-          nix-file: android-emulator.nix
-
-      - name: Execute Script Inside Termux
+      - name: Download Termux APK
         run: |
-          adb shell am start -n com.termux/.app.TermuxActivity
-          sleep 5
-          adb shell "echo 'bash /data/data/com.termux/files/home/myscript.sh' | tee /data/data/com.termux/files/home/.bashrc"
-          adb shell am force-stop com.termux
-          adb shell am start -n com.termux/.app.TermuxActivity
-          sleep 5
+          wget https://f-droid.org/repo/com.termux_1020.apk -O termux.apk
 
-      - name: Upload Build Artifact
-        uses: actions/upload-artifact@v4
+      - name: Start Android Emulator, Install Termux, and Run Script
+        uses: reactivecircus/android-emulator-runner@v2
         with:
-          name: Termux-Build-${{ matrix.abi }}
-          path: output-folder/
+          api-level: 29
+          script: |
+            adb start-server
+            adb devices  # Ensure the emulator is detected
+
+            adb shell input keyevent 82  # Unlock screen
+            adb install termux.apk       # Install Termux APK
+            adb shell monkey -p com.termux -c android.intent.category.LAUNCHER 1  # Launch Termux
+
+            # Grant Termux storage access
+            adb shell am start -n com.termux/.TermuxActivity
+            sleep 5  # Wait for Termux to initialize
+            adb shell input text "termux-setup-storage"
+            adb shell input keyevent 66  # Press Enter
+            sleep 5  # Wait for storage setup
+
+            # Copy files to Termux home directory
+            adb push baserom.us.z64 /data/data/com.termux/files/home/
+            adb push myscript.sh /data/data/com.termux/files/home/
+
+            # Ensure script is executable
+            adb shell chmod +x /data/data/com.termux/files/home/myscript.sh
+
+            # Run the script inside Termux
+            adb shell am broadcast -a com.termux.permission.RUN_COMMAND \
+              --es command './myscript.sh' \
+              --es runner shell
