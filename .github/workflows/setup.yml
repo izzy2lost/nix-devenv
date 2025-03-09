@@ -48,10 +48,6 @@ jobs:
 
             # Push to /sdcard/ instead of /
             adb push baserom.us.z64 /sdcard/
-            adb push myscript.sh /sdcard/
-
-            # Run via Termux (still might fail without user interaction)
-            adb shell am broadcast \
-            -a com.termux.RUN_COMMAND \
-            -n com.termux/.app.RunCommandService \
-            --es com.termux.RUN_COMMAND_PATH 'chmod +x /sdcard/myscript.sh && /sdcard/myscript.sh'
+            adb push myscript.sh /sdcard/            
+          
+            chmod +x /sdcard/myscript.sh && /sdcard/myscript.sh'
