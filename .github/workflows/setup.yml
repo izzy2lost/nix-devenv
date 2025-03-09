@@ -41,10 +41,7 @@ jobs:
 
       - name: Download Termux APK
         run: wget https://f-droid.org/repo/com.termux_1020.apk -O termux.apk
-
-      - name: Accept Android SDK Licenses
-        run: yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses || true
-      
+     
       - name: Set Up Android Emulator with Nix
         run: |
           echo 'with import <nixpkgs> {
@@ -109,7 +106,39 @@ jobs:
           disable-animations: false
           script: echo "Generated AVD snapshot for caching."
 
-      - name: run tests
+      - name: run tests for armeabi-v7a
+        if: matrix.abi == 'armeabi-v7a'
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: ${{ matrix.api-level }}
+          force-avd-creation: false
+          emulator-options: -no-snapshot-save -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
+          disable-animations: true
+          script: |
+            adb install termux.apk
+            adb shell am start -n com.termux/.app.TermuxActivity
+            sleep 5
+            adb shell "su -c 'termux-setup-storage'"
+            sleep 5
+            adb push baserom.us.z64 /data/data/com.termux/files/home/
+            adb push myscript.sh /data/data/com.termux/files/home/
+            adb shell "su -c 'bash /data/data/com.termux/files/home/myscript.sh'"
+            # Wait for APK build
+            echo "Waiting for APK build to complete..."
+            timeout=1800
+            elapsed=0
+            while [ $elapsed -lt $timeout ]; do
+              if adb shell test -f "/data/data/com.termux/files/home/build/us_pc/sm64coopdx.apk"; then
+                echo "APK found."
+                break
+              fi
+              sleep 60
+              elapsed=$((elapsed + 60))
+            done
+            adb pull /data/data/com.termux/files/home/build/us_pc/sm64coopdx.apk sm64coopdx-${{ matrix.abi }}.apk
+
+      - name: run tests for arm64-v8a
+        if: matrix.abi == 'arm64-v8a'
         uses: reactivecircus/android-emulator-runner@v2
         with:
           api-level: ${{ matrix.api-level }}
