@@ -58,7 +58,7 @@ jobs:
               platformToolsVersion = "33.0.3";
               buildToolsVersions = [ "30.0.3" ];
               includeEmulator = true;
-              emulatorVersion = "30.3.4";
+              emulatorVersion = "31.3.10";
               platformVersions = [ "28" "29" "30" ];
               includeSources = false;
               includeSystemImages = true;
