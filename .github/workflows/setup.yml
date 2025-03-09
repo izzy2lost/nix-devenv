@@ -82,6 +82,13 @@ jobs:
         run: |
           nohup emulator -avd test_emulator -no-audio -no-window -gpu off &
 
+      - name: Enable ADB and Add User to ADB Group
+        run: |
+          sudo apt update
+          sudo apt install -y adb
+          sudo usermod -aG adbusers $USER
+          sudo systemctl restart udev
+
       - name: Wait for Emulator to Start
         run: |
           until adb shell getprop sys.boot_completed | grep -m 1 "1"; do
