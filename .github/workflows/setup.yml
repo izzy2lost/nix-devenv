@@ -38,10 +38,7 @@ jobs:
 
       - name: Download Termux APK
         run: wget https://f-droid.org/repo/com.termux_1020.apk -O termux.apk
-
-      - name: Accept Android SDK License
-        run: $ export NIXPKGS_ACCEPT_ANDROID_SDK_LICENSE=1
-
+      
       - name: Set Up Android Emulator with Nix
         run: |
           echo 'with import <nixpkgs> {};
