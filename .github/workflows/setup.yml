@@ -82,6 +82,12 @@ jobs:
         run: |
           nohup emulator -avd test_emulator -no-audio -no-window -gpu off &
 
+      - name: Create adbusers Group
+        run: |
+          sudo groupadd adbusers || true  # This will create the group if it doesn't exist
+          sudo usermod -aG adbusers $USER
+          sudo systemctl restart udev
+
       - name: Enable ADB and Add User to ADB Group
         run: |
           sudo apt update
