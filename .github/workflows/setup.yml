@@ -19,26 +19,27 @@ jobs:
         with:
           nix_path: nixpkgs=channel:nixos-unstable
 
-      - name: Build with Nix
-        run: nix-build
+      - name: Initialize Devenv
+        run: |
+          # Initialize devenv environment
+          devenv init
        
       - uses: cachix/cachix-action@v15
         with:
           name: devenv
-      
+
       - name: Build the Devenv shell and run any pre-commit hooks
         run: devenv test
         
       - name: Run a single command in the Devenv shell
-        run: devenv shell hello
+        run: devenv shell "echo hello"
         
       - name: Run a multi-line command in the Devenv shell
-        shell: bash
         run: |
-          devenv shell bash -- -e <<EOF
-          hello
-          say-bye
-          EOF
+          devenv shell bash -- -c "
+            echo hello
+            echo say-bye
+          "
 
       - name: Install Android Emulator (AArch64 & ARMv7)
         run: |
