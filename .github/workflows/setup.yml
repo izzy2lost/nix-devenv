@@ -14,14 +14,27 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
         
-      - name: Install Nix and Devenv
-        uses: cachix/install-nix-action@v30
-        with:
-          nix_path: nixpkgs=channel:nixos-unstable
+      - name: Install Nix
+        run: |
+          # Installing Nix from the official GitHub releases
+          curl -L https://nixos.org/nix/install | sh
+          source /home/runner/.nix-profile/etc/profile.d/nix.sh
+          echo "Nix installed successfully"
+
+      - name: Install Devenv (from script or Nix)
+        run: |
+          # Attempting to use a shell script or Nix to install Devenv
+          if ! command -v devenv &> /dev/null; then
+            echo "Devenv not found, installing..."
+            # Try using Nix if devenv is not found
+            nix-env -iA nixpkgs.devenv
+          else
+            echo "Devenv is already installed"
+          fi
 
       - name: Initialize Devenv
         run: |
-          # Initialize devenv environment
+          # Initialize Devenv environment
           devenv init
        
       - uses: cachix/cachix-action@v15
