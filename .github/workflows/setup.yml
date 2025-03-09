@@ -11,6 +11,16 @@ jobs:
         abi: ["armeabi-v7a", "arm64-v8a"] # The matrix for two ABI versions
 
     steps:
+       - name: Free up disk space
+  uses: jlumbroso/free-disk-space@main
+  with:
+    android: false  # Keep Android SDK/NDK/emulator
+    dotnet: true  # Remove .NET (huge space saver)
+    haskell: true  # Remove Haskell (GHC)
+    large-packages: true  # Remove large, non-essential packages
+    swap: true  # Remove swap file for extra space
+    docker-images: true  # Remove preinstalled Docker images (saves a lot of space)
+    
       - name: Checkout Repository
         uses: actions/checkout@v4
       
