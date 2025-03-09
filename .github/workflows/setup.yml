@@ -18,7 +18,7 @@ jobs:
           dotnet: true  # Remove .NET (huge space saver)
           haskell: true  # Remove Haskell (GHC)
           large-packages: true  # Remove large, non-essential packages
-          swap: true  # Remove swap file for extra space
+          swap-storage: true  # Remove swap file for extra space
           docker-images: true  # Remove preinstalled Docker images (saves a lot of space)
 
       - name: Checkout Repository
