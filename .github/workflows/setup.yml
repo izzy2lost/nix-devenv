@@ -10,10 +10,7 @@ jobs:
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
-
-      - name: Accept Android SDK License
-        run: export NIXPKGS_ACCEPT_ANDROID_SDK_LICENSE=1
-
+      
       - name: Install Nix
         uses: cachix/install-nix-action@v30
         with:
@@ -41,6 +38,9 @@ jobs:
 
       - name: Download Termux APK
         run: wget https://f-droid.org/repo/com.termux_1020.apk -O termux.apk
+
+      - name: Accept Android SDK License
+        run: export NIXPKGS_ACCEPT_ANDROID_SDK_LICENSE=1
 
       - name: Set Up Android Emulator with Nix
         run: |
