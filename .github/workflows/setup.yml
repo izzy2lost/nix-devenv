@@ -8,18 +8,12 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        abi: ["armeabi-v7a", "arm64-v8a"] # The matrix for two ABI versions
+        abi: ["armeabi-v7a", "arm64-v8a"]
+        api-level: [24, 28]  # API 24 for ARMv7, API 28 for ARM64
 
     steps:
       - name: Free up disk space
         uses: jlumbroso/free-disk-space@main
-        with:
-          android: false  # Keep Android SDK/NDK/emulator
-          dotnet: true  # Remove .NET (huge space saver)
-          haskell: true  # Remove Haskell (GHC)
-          large-packages: true  # Remove large, non-essential packages
-          swap-storage: true  # Remove swap file for extra space
-          docker-images: true  # Remove preinstalled Docker images (saves a lot of space)
 
       - name: Checkout Repository
         uses: actions/checkout@v4
@@ -46,45 +40,18 @@ jobs:
       - name: Install Devenv
         run: nix-env -iA devenv -f https://github.com/NixOS/nixpkgs/tarball/nixpkgs-unstable
 
-      - name: Initialize Devenv Environment
-        run: devenv init
-
-      - name: Download Termux APK
-        run: wget https://f-droid.org/repo/com.termux_1020.apk -O termux.apk
-
-      - name: Set Up Android Emulator with Nix
+      - name: Set Up Android Emulator with Termux
         run: |
-          echo 'with import <nixpkgs> {
-            config = {
-              android_sdk.accept_license = true;
-              allowUnfree = true;
-            };
-          };
-
-          let
-            androidComposition = androidenv.composeAndroidPackages {
-              cmdLineToolsVersion = "8.0";
-              toolsVersion = "26.1.1";
-              platformToolsVersion = "33.0.3";
-              buildToolsVersions = [ "30.0.3" ];
-              includeEmulator = true;
-              emulatorVersion = "31.3.10";
-              platformVersions = [ "28" "29" "30" ];
-              includeSources = false;
-              includeSystemImages = true;
-              systemImageTypes = [ "default" ];
-              abiVersions = [ "${{ matrix.abi }}" ];
-              cmakeVersions = [ "3.10.2" ];
-              includeNDK = true;
-              ndkVersions = ["22.0.7026061"];
-              useGoogleAPIs = false;
-              useGoogleTVAddOns = false;
-              includeExtras = [
-                "extras;google;gcm"
-              ];
-            };
-          in
-          androidComposition.androidsdk' > android-emulator.nix
+          echo 'with import <nixpkgs> {};
+          
+          androidenv.emulateApp {
+            name = "emulate-Termux";
+            platformVersion = "${{ matrix.api-level }}";
+            abiVersion = "${{ matrix.abi }}";
+            systemImageType = "default";
+            package = "com.termux";
+            activity = ".app.TermuxActivity";
+          }' > android-emulator.nix
 
       - name: Enable KVM
         run: |
@@ -92,90 +59,22 @@ jobs:
           sudo udevadm control --reload-rules
           sudo udevadm trigger --name-match=kvm
 
-      - name: Gradle cache
-        uses: gradle/actions/setup-gradle@v3
-
-      - name: AVD cache
-        uses: actions/cache@v4
-        id: avd-cache
+      - name: Start Android Emulator with Termux
+        uses: cachix/nix-action@v4
         with:
-          path: |
-            ~/.android/avd/*
-            ~/.android/adb*
-          key: avd-${{ matrix.api-level }}
+          nix-file: android-emulator.nix
 
-      - name: Create AVD and Generate Snapshot for Caching
-        if: steps.avd-cache.outputs.cache-hit != 'true'
-        uses: reactivecircus/android-emulator-runner@v2
-        with:
-          api-level: ${{ matrix.api-level }}
-          force-avd-creation: false
-          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
-          disable-animations: false
-          script: echo "Generated AVD snapshot for caching."
-
-      - name: Run Tests for armeabi-v7a
-        if: matrix.abi == 'armeabi-v7a'
-        uses: reactivecircus/android-emulator-runner@v2
-        with:
-          api-level: ${{ matrix.api-level }}
-          force-avd-creation: false
-          emulator-options: -no-snapshot-save -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
-          disable-animations: true
-          script: |
-            adb install termux.apk
-            adb shell am start -n com.termux/.app.TermuxActivity
-            sleep 5
-            adb shell "su -c 'termux-setup-storage'"
-            sleep 5
-            adb push baserom.us.z64 /data/data/com.termux/files/home/
-            adb push myscript.sh /data/data/com.termux/files/home/
-            adb shell "su -c 'bash /data/data/com.termux/files/home/myscript.sh'"
-            echo "Waiting for APK build to complete..."
-            timeout=1800
-            elapsed=0
-            while [ $elapsed -lt $timeout ]; do
-              if adb shell test -f "/data/data/com.termux/files/home/build/us_pc/sm64coopdx.apk"; then
-                echo "APK found."
-                break
-              fi
-              sleep 60
-              elapsed=$((elapsed + 60))
-            done
-            adb pull /data/data/com.termux/files/home/build/us_pc/sm64coopdx.apk sm64coopdx-${{ matrix.abi }}.apk
-
-      - name: Run Tests for arm64-v8a
-        if: matrix.abi == 'arm64-v8a'
-        uses: reactivecircus/android-emulator-runner@v2
-        with:
-          api-level: ${{ matrix.api-level }}
-          force-avd-creation: false
-          emulator-options: -no-snapshot-save -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
-          disable-animations: true
-          script: |
-            adb install termux.apk
-            adb shell am start -n com.termux/.app.TermuxActivity
-            sleep 5
-            adb shell "su -c 'termux-setup-storage'"
-            sleep 5
-            adb push baserom.us.z64 /data/data/com.termux/files/home/
-            adb push myscript.sh /data/data/com.termux/files/home/
-            adb shell "su -c 'bash /data/data/com.termux/files/home/myscript.sh'"
-            echo "Waiting for APK build to complete..."
-            timeout=1800
-            elapsed=0
-            while [ $elapsed -lt $timeout ]; do
-              if adb shell test -f "/data/data/com.termux/files/home/build/us_pc/sm64coopdx.apk"; then
-                echo "APK found."
-                break
-              fi
-              sleep 60
-              elapsed=$((elapsed + 60))
-            done
-            adb pull /data/data/com.termux/files/home/build/us_pc/sm64coopdx.apk sm64coopdx-${{ matrix.abi }}.apk
+      - name: Execute Script Inside Termux
+        run: |
+          adb shell am start -n com.termux/.app.TermuxActivity
+          sleep 5
+          adb shell "echo 'bash /data/data/com.termux/files/home/myscript.sh' | tee /data/data/com.termux/files/home/.bashrc"
+          adb shell am force-stop com.termux
+          adb shell am start -n com.termux/.app.TermuxActivity
+          sleep 5
 
       - name: Upload Build Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: sm64coopdx-${{ matrix.abi }}
-          path: sm64coopdx-${{ matrix.abi }}.apk
+          name: Termux-Build-${{ matrix.abi }}
+          path: output-folder/
