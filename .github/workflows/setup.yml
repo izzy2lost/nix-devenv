@@ -22,7 +22,7 @@ jobs:
           docker run --rm -v ${{ github.workspace }}:/workspace --name termux-env ubuntu bash -c "
             apt update &&
             apt install -y wget curl git make &&
-            git clone https://github.com/proot-me/proot-distro.git &&
+            git clone https://github.com/termux/proot-distro.git &&
             cd proot-distro &&
             make install &&
             proot-distro install ubuntu &&
