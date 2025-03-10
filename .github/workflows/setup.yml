@@ -1,30 +1,61 @@
-name: ci
+name: Build SM64 APK
 
 on:
-  workflow_dispatch:
+  push:
+    branches:
+      - main
+  pull_request:
 
 jobs:
-  qemu-termux:
+  build:
     runs-on: ubuntu-latest
     steps:
-      - 
-        name: Checkout repository
+      - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          submodules: true
 
-      - 
-        name: Set up QEMU
-        uses: docker/setup-qemu-action@v3.6.0
-
-      - 
-        name: Install proot-distro and run script
+      - name: Install dependencies
         run: |
-          docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
-          docker run --rm -v ${{ github.workspace }}:/workspace --name termux-env ubuntu bash -c "
-            apt update &&
-            apt install -y wget curl git make &&    
-            apt install proot -y          
-              cd /workspace &&
-              chmod +x myscript.sh &&
-              ./myscript.sh
-            '
-          "
+          sudo apt update
+          sudo apt install -y git wget make python getconf zip clang binutils libglvnd-dev aapt apksigner which
+
+      - name: Check for baserom.us.z64 in repo
+        run: |
+          echo "Checking for baserom.us.z64 in the root of the repo..."
+          if [ ! -f baserom.us.z64 ]; then
+            echo "Baserom not found! The build will fail without it."
+            exit 1
+          fi
+
+      - name: Build APK
+        run: |
+          mkdir -p artifact
+          if [ -d "sm64coopdx" ]; then
+            cd sm64coopdx
+            git reset --hard HEAD
+            git pull origin android
+            git submodule update --init --recursive
+            make distclean
+          else
+            git clone --recursive https://github.com/ManIsCat2/sm64coopdx.git
+            cd sm64coopdx
+          fi
+          cp ../baserom.us.z64 baserom.us.z64  # Directly copy the baserom
+          make 2>&1 | tee build.log
+
+      - name: Move APK to artifact directory (if found)
+        run: |
+          if [ -f sm64coopdx/build/us_pc/sm64coopdx.apk ]; then
+            mv sm64coopdx/build/us_pc/sm64coopdx.apk artifact/
+          else
+            echo "APK build failed!"
+            exit 1
+          fi
+
+      - name: Upload APK as Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: sm64coopdx-apk
+          path: artifact/sm64coopdx.apk
+          if-no-files-found: error  # Fail if APK is missing
