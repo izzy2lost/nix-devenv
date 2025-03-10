@@ -19,15 +19,15 @@ jobs:
         name: Run QEMU with Ubuntu and install proot-distro
         run: |
           docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
-          docker run --rm -it -v ${{ github.workspace }}:/workspace --name termux-env ubuntu bash -c "
+          docker run --rm -v ${{ github.workspace }}:/workspace --name termux-env ubuntu bash -c "
             apt update &&
-            apt install -y wget curl proot-distro &&
+            apt install -y wget curl proot-distro make &&
             
             echo 'Installing Ubuntu inside proot-distro (simulating Termux)...' &&
             proot-distro install ubuntu &&
             
-            echo 'Entering Termux-like Ubuntu environment...' &&
-            proot-distro login ubuntu --bash -i -c '
+            echo 'Running the script in a non-interactive environment...' &&
+            proot -S /usr/var/lib/proot-distro/ubuntu -- sh -c '
               # Install Termux package manager (pkg) in proot-distro
               curl -sSL https://termux.org/packages/termux-keyring.gpg | gpg --dearmor -o /usr/share/keyrings/termux-archive-keyring.gpg &&
               echo \"deb [signed-by=/usr/share/keyrings/termux-archive-keyring.gpg] https://packages.termux.dev/apt/termux-main stable main\" > /etc/apt/sources.list.d/termux.list &&
