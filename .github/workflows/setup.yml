@@ -21,12 +21,9 @@ jobs:
           docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
           docker run --rm -v ${{ github.workspace }}:/workspace --name termux-env ubuntu bash -c "
             apt update &&
-            apt install -y wget curl git make &&
-            git clone https://github.com/termux/proot-distro.git &&
-            cd proot-distro &&
+            apt install -y wget curl git make &&    
+            pkg install proot
             make install &&
-            proot-distro install ubuntu &&
-            proot-distro login ubuntu -- bash -c '
               cd /workspace &&
               chmod +x myscript.sh &&
               ./myscript.sh
