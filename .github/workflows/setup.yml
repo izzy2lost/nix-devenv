@@ -18,7 +18,7 @@ jobs:
       - name: Install dependencies
         run: |
           sudo apt update
-          sudo apt install -y git wget make python getconf zip clang binutils libglvnd-dev aapt apksigner which
+          sudo apt install -y git wget make python3 getconf zip clang binutils libglvnd-dev aapt apksigner which
 
       - name: Check for baserom.us.z64 in repo
         run: |
