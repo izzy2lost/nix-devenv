@@ -22,7 +22,7 @@ jobs:
           docker run --rm -v ${{ github.workspace }}:/workspace --name termux-env ubuntu bash -c "
             apt update &&
             apt install -y wget curl git make &&    
-            pkg install proot
+            apt install proot
             make install &&
               cd /workspace &&
               chmod +x myscript.sh &&
