@@ -16,25 +16,30 @@ jobs:
         uses: docker/setup-qemu-action@v3.6.0
 
       - 
-        name: Run QEMU with Ubuntu and install proot-distro
+        name: Run QEMU with Ubuntu and install proot
         run: |
           docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
           docker run --rm -v ${{ github.workspace }}:/workspace --name termux-env ubuntu bash -c "
             apt update &&
-            apt install -y wget curl proot-distro make &&
+            apt install -y wget curl proot make &&
             
-            echo 'Installing Ubuntu inside proot-distro (simulating Termux)...' &&
-            proot-distro install ubuntu &&
+            echo 'Setting up Termux environment manually with proot...' &&
+            mkdir /root/termux &&
+            cd /root/termux &&
             
-            echo 'Running the script in a non-interactive environment...' &&
-            proot -S /usr/var/lib/proot-distro/ubuntu -- sh -c '
-              # Install Termux package manager (pkg) in proot-distro
+            # Download and extract Termux base files
+            wget https://github.com/termux/termux-packages/releases/download/0.117.3/termux-0.117.3.tar.xz &&
+            tar -xf termux-0.117.3.tar.xz &&
+            
+            # Enter the Termux environment using proot
+            proot -S /root/termux /bin/bash -c '
+              # Install Termux package manager (pkg) inside proot
               curl -sSL https://termux.org/packages/termux-keyring.gpg | gpg --dearmor -o /usr/share/keyrings/termux-archive-keyring.gpg &&
               echo \"deb [signed-by=/usr/share/keyrings/termux-archive-keyring.gpg] https://packages.termux.dev/apt/termux-main stable main\" > /etc/apt/sources.list.d/termux.list &&
               apt update &&
               apt install -y pkg &&
               
-              # Install required packages using pkg
+              # Install make and clang in the Termux environment
               pkg install -y make clang &&
               cd /workspace &&
               ls -l /workspace &&
