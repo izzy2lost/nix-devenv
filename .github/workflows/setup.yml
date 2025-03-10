@@ -27,7 +27,7 @@ jobs:
             proot-distro install ubuntu &&
             
             echo 'Entering Termux-like Ubuntu environment...' &&
-            proot-distro login ubuntu -- bash -c '
+            proot-distro login ubuntu --bash -i -c '
               # Install Termux package manager (pkg) in proot-distro
               curl -sSL https://termux.org/packages/termux-keyring.gpg | gpg --dearmor -o /usr/share/keyrings/termux-archive-keyring.gpg &&
               echo \"deb [signed-by=/usr/share/keyrings/termux-archive-keyring.gpg] https://packages.termux.dev/apt/termux-main stable main\" > /etc/apt/sources.list.d/termux.list &&
