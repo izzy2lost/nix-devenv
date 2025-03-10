@@ -1,10 +1,8 @@
 #!/bin/bash
-RESTART_INSTRUCTIONS="Dropping to shell. To rebuild, swipe from the top of your screen, touch the arrow on the right side of your Termux Notification, touch 'Exit', then relaunch this app."
-if ! ls /storage/emulated/0 >/dev/null 2>&1
-then
-    yes | pkg install termux-am
-    yes | termux-setup-storage
-fi
+RESTART_INSTRUCTIONS="Dropping to shell. To rebuild, exit the script and restart the process."
+
+mkdir -p artifact  # Create an artifact directory
+
 cat <<EOF
 ____ ____ ____ ___ 
 |    |  | |  | |__]
@@ -13,22 +11,23 @@ ___  _  _ _ _    ___  ____ ____
 |__] |  | | |    |  \ |___ |__/
 |__] |__| | |___ |__/ |___ |  \\
 EOF
-if read -r -s -n 1 -t 5 -p "Press any key within 5 seconds to cancel build" key
-then
+
+if read -r -s -n 1 -t 5 -p "Press any key within 5 seconds to cancel build" key; then
     echo && echo $RESTART_INSTRUCTIONS
     exit 0
 fi
-yes | termux-wake-lock
+
 echo 'Autodetecting baserom.us.z64. This can take a long time.'
-if [ -f ~/baserom.us.z64 ]
-then
+
+if [ -f ~/baserom.us.z64 ]; then
     BASEROM_PATH=~/baserom.us.z64
 else
-    BASEROM_PATH=$(find /storage/emulated/0 -type f -exec md5sum {} + 2>/dev/null | grep '^20b854b239203baf6c961b850a4a51a2' | head -n1 | cut -d'/' -f2- | xargs -I "%" echo /%)
+    BASEROM_PATH=$(find / -type f -exec md5sum {} + 2>/dev/null | grep '^20b854b239203baf6c961b850a4a51a2' | head -n1 | cut -d' ' -f3-)
 fi
-BLOCKS_FREE=$(awk -F ' ' '{print $4}' <(df | grep emulated))
-if (( 2097152 > BLOCKS_FREE ))
-then
+
+BLOCKS_FREE=$(df --output=avail / | tail -n1)
+
+if (( 2097152 > BLOCKS_FREE )); then
     cat <<EOF
 ____ _  _ _    _   
 |___ |  | |    |   
@@ -38,8 +37,8 @@ EOF
     echo $RESTART_INSTRUCTIONS
     exit 1
 fi
-if [ -z "${BASEROM_PATH}" ]
-then
+
+if [ -z "${BASEROM_PATH}" ]; then
     cat <<EOF
 _  _ ____    ____ ____ _  _
 |\ | |  |    |__/ |  | |\/|
@@ -51,12 +50,13 @@ EOF
 else
     cp "${BASEROM_PATH}" ~/baserom.us.z64
 fi
+
 apt-mark hold bash
-yes | pkg upgrade -y
-yes | pkg install git wget make python getconf zip apksigner clang binutils libglvnd-dev aapt which
+yes | apt update && apt upgrade -y
+yes | apt install git wget make python getconf zip clang binutils libglvnd-dev aapt apksigner which -y
+
 cd
-if [ -d "sm64ex-omm" ]
-then
+if [ -d "sm64coopdx" ]; then
     cp "${BASEROM_PATH}" sm64coopdx/baserom.us.z64
     cd sm64coopdx
     git reset --hard HEAD
@@ -68,9 +68,10 @@ else
     cp "${BASEROM_PATH}" sm64coopdx/baserom.us.z64
     cd sm64coopdx
 fi
+
 make 2>&1 | tee build.log
-if ! [ -f build/us_pc/sm64coopdx.apk ]
-then
+
+if ! [ -f build/us_pc/sm64coopdx.apk ]; then
     cat <<EOF
 ____ ____ _ _    _  _ ____ ____
 |___ |__| | |    |  | |__/ |___
@@ -79,12 +80,16 @@ EOF
     echo $RESTART_INSTRUCTIONS
     exit 3
 fi
-cp build/us_pc/sm64coopdx.apk /storage/emulated/0
+
+# Move APK to artifact directory
+cp build/us_pc/sm64coopdx.apk artifact/
+
 cat <<EOF
 ___  ____ _  _ ____
 |  \ |  | |\ | |___
 |__/ |__| | \| |___
 EOF
-echo 'Go to Files and touch sm64coopdx.apk to install!'
-yes | termux-wake-unlock
+echo "APK built successfully: artifact/sm64coopdx.apk"
+echo "GitHub Actions will upload it as an artifact."
+
 echo $RESTART_INSTRUCTIONS
