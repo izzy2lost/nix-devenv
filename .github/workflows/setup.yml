@@ -4,9 +4,42 @@ on:
   workflow_dispatch:
 
 jobs:
-  qemu:
+  qemu-termux:
     runs-on: ubuntu-latest
     steps:
-      -
+      - 
+        name: Checkout repository
+        uses: actions/checkout@v4
+
+      - 
         name: Set up QEMU
         uses: docker/setup-qemu-action@v3.6.0
+
+      - 
+        name: Run QEMU with Ubuntu and install proot-distro
+        run: |
+          docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
+          docker run --rm -it -v ${{ github.workspace }}:/workspace --name termux-env ubuntu bash -c "
+            apt update &&
+            apt install -y wget curl proot-distro &&
+            
+            echo 'Installing Ubuntu inside proot-distro (simulating Termux)...' &&
+            proot-distro install ubuntu &&
+            
+            echo 'Entering Termux-like Ubuntu environment...' &&
+            proot-distro login ubuntu -- bash -c '
+              # Install Termux package manager (pkg) in proot-distro
+              curl -sSL https://termux.org/packages/termux-keyring.gpg | gpg --dearmor -o /usr/share/keyrings/termux-archive-keyring.gpg &&
+              echo \"deb [signed-by=/usr/share/keyrings/termux-archive-keyring.gpg] https://packages.termux.dev/apt/termux-main stable main\" > /etc/apt/sources.list.d/termux.list &&
+              apt update &&
+              apt install -y pkg &&
+              
+              # Install required packages using pkg
+              pkg install -y make clang &&
+              cd /workspace &&
+              ls -l /workspace &&
+              cat /workspace/myscript.sh &&
+              chmod +x myscript.sh &&
+              ./myscript.sh
+            '
+          "
